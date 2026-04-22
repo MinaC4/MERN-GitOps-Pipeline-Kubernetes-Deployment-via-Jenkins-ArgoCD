@@ -1,0 +1,17 @@
+replicaCount: 1
+imagePullPolicy: IfNotPresent
+
+# MongoDB Atlas + JWT
+secrets:
+  mongoUsername: "kazbar2002_db_user"
+  mongoPassword: "r3h5FQAaXWOSoIZu"
+  mongoCluster: "cluster0.inpzonw.mongodb.net"
+  mongoDbname: "eshtry_mny"
+  accessToken: "decc69aca5047faa378a3dd83c051d7ac5c2ad863a9982be624bd72b900e0823"
+
+# Images from Docker Hub
+images:
+  user: minac4/eshtry-mny-user:latest
+  product: minac4/eshtry-mny-product:latest
+  cart: minac4/eshtry-mny-cart:latest
+  frontend: minac4/eshtry-mny-frontend:latest
