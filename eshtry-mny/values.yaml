@@ -15,3 +15,9 @@ images:
   product: minac4/eshtry-mny-product:latest
   cart: minac4/eshtry-mny-cart:latest
   frontend: minac4/eshtry-mny-frontend:latest
+
+# ====================== Ingress ======================
+ingress:
+  enabled: true
+  className: nginx
+  host: eshtry-mny.local   # 
