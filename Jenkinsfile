@@ -44,7 +44,7 @@ pipeline {
         stage('Deploy to Kubernetes with Helm') {
             steps {
                 script {
-                    echo "🚀 Deploying to Minikube..."
+                    echo " Deploying to Minikube..."
 
                     sh '''
                         export KUBECONFIG=/var/lib/jenkins/.kube/config
@@ -67,10 +67,10 @@ pipeline {
 
     post {
         success {
-            echo '✅ Pipeline Success - Application Deployed!'
+            echo ' Pipeline Success - Application Deployed!'
         }
         failure {
-            echo '❌ Pipeline Failed!'
+            echo ' Pipeline Failed!'
         }
     }
 }
