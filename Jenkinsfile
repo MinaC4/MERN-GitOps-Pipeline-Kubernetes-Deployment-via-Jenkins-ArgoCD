@@ -7,6 +7,7 @@ pipeline {
     }
 
     stages {
+
         stage('Checkout Code') {
             steps {
                 checkout scm
@@ -27,7 +28,9 @@ pipeline {
         stage('Push Images to Docker Hub') {
             steps {
                 script {
-                    sh 'echo $DOCKERHUB_CREDENTIALS_PSW | docker login -u $DOCKERHUB_CREDENTIALS_USR --password-stdin'
+                    sh '''
+                        echo $DOCKERHUB_CREDENTIALS_PSW | docker login -u $DOCKERHUB_CREDENTIALS_USR --password-stdin
+                    '''
                     sh 'docker push minac4/eshtry-mny-user:${IMAGE_TAG}'
                     sh 'docker push minac4/eshtry-mny-product:${IMAGE_TAG}'
                     sh 'docker push minac4/eshtry-mny-cart:${IMAGE_TAG}'
@@ -37,21 +40,25 @@ pipeline {
         }
 
         stage('Deploy to Kubernetes with Helm') {
-    steps {
-        script {
-            echo "🚀 Deploying with Helm to Minikube..."
-            sh '''
-                export KUBECONFIG=/var/lib/jenkins/.kube/config
-                cd eshtry-mny
-                helm upgrade --install eshtry-mny . \
-                  --set images.user=minac4/eshtry-mny-user:${IMAGE_TAG} \
-                  --set images.product=minac4/eshtry-mny-product:${IMAGE_TAG} \
-                  --set images.cart=minac4/eshtry-mny-cart:${IMAGE_TAG} \
-                  --set images.frontend=minac4/eshtry-mny-frontend:${IMAGE_TAG}
-            '''
+            steps {
+                script {
+                    echo "🚀 Deploying to Minikube..."
+
+                    sh '''
+                        export KUBECONFIG=/var/lib/jenkins/.kube/config
+                        kubectl config use-context minikube
+
+                        cd eshtry-mny
+
+                        helm upgrade --install eshtry-mny . \
+                          --set images.user=minac4/eshtry-mny-user:${IMAGE_TAG} \
+                          --set images.product=minac4/eshtry-mny-product:${IMAGE_TAG} \
+                          --set images.cart=minac4/eshtry-mny-cart:${IMAGE_TAG} \
+                          --set images.frontend=minac4/eshtry-mny-frontend:${IMAGE_TAG}
+                    '''
+                }
+            }
         }
-    }
-}
     }
 
     post {
