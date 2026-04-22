@@ -1,71 +1,103 @@
-# E-Commerce Web Application using MERN Stack and Microservices Architecture
+# E-Commerce MERN Microservices
 
 ## Description
-This is a web application for an e-commerce store that sells games. It is built using the MERN stack and Microservices Architecture. It has a user interface for the customers to view the products and add them to their cart. The application is built using the Microservices Architecture, where each service is a separate Node.js application.
+E-commerce web app (games store) built with the MERN stack using a microservices architecture.
 
-## Installation
+## Services
+- **Frontend**: `front-end` (Vite/React) — port `5173`
+- **Product service**: `Product` — port `9000`
+- **User service**: `User` — port `9001`
+- **Cart service**: `Cart` — port `9003`
 
-Use the package manager [npm](https://www.npmjs.com/) to install dependencies.
+## Prerequisites
+- Node.js + npm (for local development)
+- Docker + Docker Compose (recommended for local development)
+- Kubernetes + `kubectl` (for cluster deployment)
+
+## Environment variables
+This repo uses env vars both for local Docker Compose and Kubernetes.
+
+- **Secrets (do not commit real values)**:
+  - `MONGO_USERNAME`
+  - `MONGO_PASSWORD`
+  - `ACCESS_TOKEN`
+- **Non-secret config**:
+  - `MONGO_CLUSTER`
+  - `MONGO_DBNAME`
+  - `NODE_ENV`
+
+### Local `.env`
+Create a `.env` file in the repo root (used by `docker-compose.yml`):
 
 ```bash
-npm install
+MONGO_USERNAME=your_mongo_user
+MONGO_PASSWORD=your_mongo_password
+ACCESS_TOKEN=your_access_token
+
+MONGO_CLUSTER=cluster0.yourcluster.mongodb.net
+MONGO_DBNAME=your_db_name
+NODE_ENV=development
 ```
 
-## Usage
+Each service may also have its own env file (Compose references `./User/.env` and `./Cart/.env` if present).
 
-1. Create a .env file in the root directory and add the following environment variables (replace all #### with your own values):
+## Run locally with Docker Compose
+From the repo root:
+
 ```bash
-PORT=####
-MONGO_USERNAME=####
-MONGO_PASSWORD=####
-MONGO_CLUSTER=####
-MONGO_DBNAME=####
-ACCESS_TOKEN=####
-```
-2. Run the following command to start the application:
-```bash
-npm run dev
-```
-3. Open the following URL in your browser:
-```bash
-http://localhost:<port_no>/
+docker compose up --build
 ```
 
-4. Or you can use docker-compose to run the application:
-```bash
-docker-compose up
-```
-5. Show the running containers:
-```bash
-docker ps
-```
-6. Get the container ip address:
-```bash
-docker inspect <container_id> | grep "IPAddress"
-```
-7. Open the following URL in your browser:
-```bash
-http://<container_ip_address>:<port_no>/
-```
-8. To run the frontend application, run the following command:
-```bash
-cd frontend
-npm install
-npm run dev
-```
-9. Open the following URL in your browser:
-```bash
-http://localhost:5173/
-```
-## Products json file
-- [Products json file](https://github.com/Andrewaziz99/E-Commerce_Web_Application/blob/main/products.json)
+Then open:
+- **Frontend**: `http://localhost:5173/`
 
-## Technologies
-- [React vite](https://vitejs.dev/)
-- [Node.js](https://nodejs.org/en/)
-- [Express](https://expressjs.com/)
-- [MongoDB](https://www.mongodb.com/)
-- [Docker](https://www.docker.com/)
-- [Docker Compose](https://docs.docker.com/compose/)
-- [Microservices Architecture]()
+Backend ports are exposed for local testing:
+- **Product**: `http://localhost:9000/`
+- **User**: `http://localhost:9001/`
+- **Cart**: `http://localhost:9003/`
 
+## Deploy to Kubernetes
+Manifests live under `k8s/base/`:
+- `configmap.yaml` (`app-config`)
+- `secret.yaml` (`app-secrets`)
+- `services.yaml` (cluster services + frontend NodePort)
+- `*/deployment.yaml` for each service
+
+### Important security note (Secrets)
+`k8s/base/secret.yaml` currently contains example values. Replace them before deploying, or create the secret dynamically:
+
+```bash
+kubectl create secret generic app-secrets \
+  --from-literal=MONGO_USERNAME=your_mongo_user \
+  --from-literal=MONGO_PASSWORD=your_mongo_password \
+  --from-literal=ACCESS_TOKEN=your_access_token
+```
+
+### Apply manifests
+
+```bash
+kubectl apply -f k8s/base/configmap.yaml
+kubectl apply -f k8s/base/secret.yaml
+kubectl apply -f k8s/base/services.yaml
+kubectl apply -f k8s/base/user/deployment.yaml
+kubectl apply -f k8s/base/product/deployment.yaml
+kubectl apply -f k8s/base/cart/deployment.yaml
+kubectl apply -f k8s/base/frontend/deployment.yaml
+```
+
+### Access the frontend (NodePort)
+The `frontend` Kubernetes `Service` is `NodePort`. Find the assigned port and open it on any node IP:
+
+```bash
+kubectl get svc frontend
+```
+
+## Data
+- `products.json` contains example products for the app.
+
+## Tech stack
+- React (Vite)
+- Node.js / Express
+- MongoDB
+- Docker / Docker Compose
+- Kubernetes
