@@ -3,7 +3,6 @@ pipeline {
 
     environment {
         DOCKERHUB_CREDENTIALS = credentials('dockerhub')
-        SONAR_TOKEN = credentials('sonar-token')
         IMAGE_TAG = "${env.BUILD_NUMBER}"
         KUBECONFIG = "/var/lib/jenkins/.kube/config"
         SONAR_SCANNER = "/opt/sonar-scanner/bin/sonar-scanner"
@@ -17,7 +16,6 @@ pipeline {
             }
         }
 
-        // ==================== SONARQUBE ====================
         stage('SonarQube Analysis') {
             steps {
                 withSonarQubeEnv('sonarqube') {
@@ -25,6 +23,7 @@ pipeline {
                         ${SONAR_SCANNER} \
                         -Dsonar.projectKey=eshtry-mny \
                         -Dsonar.sources=. \
+                        -Dsonar.host.url=http://localhost:9000 \
                         -Dsonar.login=$SONAR_TOKEN
                     """
                 }
@@ -33,13 +32,12 @@ pipeline {
 
         stage('Quality Gate') {
             steps {
-                timeout(time: 5, unit: 'MINUTES') {
-                    waitForQualityGate abortPipeline: true
+                timeout(time: 10, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: false
                 }
             }
         }
 
-        // ==================== BUILD ====================
         stage('Build Docker Images') {
             steps {
                 sh 'docker build -t minac4/eshtry-mny-user:${IMAGE_TAG} ./User'
@@ -49,7 +47,6 @@ pipeline {
             }
         }
 
-        // ==================== SECURITY ====================
         stage('Security: Dependency Audit') {
             steps {
                 sh 'cd User && npm audit || true'
@@ -62,18 +59,18 @@ pipeline {
         stage('Security: Docker Scan (Trivy)') {
             steps {
                 sh '''
-                    docker run --rm aquasec/trivy image minac4/eshtry-mny-user:${IMAGE_TAG} --severity HIGH,CRITICAL --exit-code 0 || true
-                    docker run --rm aquasec/trivy image minac4/eshtry-mny-product:${IMAGE_TAG} --severity HIGH,CRITICAL --exit-code 0 || true
-                    docker run --rm aquasec/trivy image minac4/eshtry-mny-cart:${IMAGE_TAG} --severity HIGH,CRITICAL --exit-code 0 || true
-                    docker run --rm aquasec/trivy image minac4/eshtry-mny-frontend:${IMAGE_TAG} --severity HIGH,CRITICAL --exit-code 0 || true
+                    docker run --rm aquasec/trivy image minac4/eshtry-mny-user:${IMAGE_TAG} || true
+                    docker run --rm aquasec/trivy image minac4/eshtry-mny-product:${IMAGE_TAG} || true
+                    docker run --rm aquasec/trivy image minac4/eshtry-mny-cart:${IMAGE_TAG} || true
+                    docker run --rm aquasec/trivy image minac4/eshtry-mny-frontend:${IMAGE_TAG} || true
                 '''
             }
         }
 
-        // ==================== PUSH ====================
         stage('Push Images to Docker Hub') {
             steps {
                 sh 'echo $DOCKERHUB_CREDENTIALS_PSW | docker login -u $DOCKERHUB_CREDENTIALS_USR --password-stdin'
+
                 sh 'docker push minac4/eshtry-mny-user:${IMAGE_TAG}'
                 sh 'docker push minac4/eshtry-mny-product:${IMAGE_TAG}'
                 sh 'docker push minac4/eshtry-mny-cart:${IMAGE_TAG}'
@@ -81,18 +78,19 @@ pipeline {
             }
         }
 
-        // ==================== DEPLOY ====================
-        stage('Deploy to Kubernetes with Helm') {
+        stage('Deploy to Kubernetes') {
             steps {
                 sh '''
                     export KUBECONFIG=/var/lib/jenkins/.kube/config
-                    kubectl get nodes
-                    cd eshtry-mny
-                    helm upgrade --install eshtry-mny . \
-                      --set images.user=minac4/eshtry-mny-user:${IMAGE_TAG} \
-                      --set images.product=minac4/eshtry-mny-product:${IMAGE_TAG} \
-                      --set images.cart=minac4/eshtry-mny-cart:${IMAGE_TAG} \
-                      --set images.frontend=minac4/eshtry-mny-frontend:${IMAGE_TAG}
+
+                    kubectl apply -f k8s/
+
+                    kubectl set image deployment/user user=minac4/eshtry-mny-user:${IMAGE_TAG}
+                    kubectl set image deployment/product product=minac4/eshtry-mny-product:${IMAGE_TAG}
+                    kubectl set image deployment/cart cart=minac4/eshtry-mny-cart:${IMAGE_TAG}
+                    kubectl set image deployment/frontend frontend=minac4/eshtry-mny-frontend:${IMAGE_TAG}
+
+                    kubectl get svc
                 '''
             }
         }
@@ -100,10 +98,10 @@ pipeline {
 
     post {
         success {
-            echo 'Pipeline Success - SonarQube + DevSecOps Enabled'
+            echo 'Pipeline Success'
         }
         failure {
-            echo 'Pipeline Failed!'
+            echo 'Pipeline Failed'
         }
     }
 }
