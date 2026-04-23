@@ -3,7 +3,6 @@ pipeline {
 
     environment {
         DOCKERHUB_CREDENTIALS = credentials('dockerhub')
-        SONAR_TOKEN = credentials('sonar-token')
         IMAGE_TAG = "${BUILD_NUMBER}"
         KUBECONFIG = "/var/lib/jenkins/.kube/config"
         SONAR_SCANNER = "/opt/sonar-scanner/bin/sonar-scanner"
@@ -20,13 +19,15 @@ pipeline {
         stage('SonarQube Analysis') {
             steps {
                 withSonarQubeEnv('sonarqube') {
-                    sh """
-                        ${SONAR_SCANNER} \
-                        -Dsonar.projectKey=eshtry-mny \
-                        -Dsonar.sources=. \
-                        -Dsonar.host.url=http://localhost:9000 \
-                        -Dsonar.login=${SONAR_TOKEN}
-                    """
+                    withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
+                        sh """
+                            ${SONAR_SCANNER} \
+                            -Dsonar.projectKey=eshtry-mny \
+                            -Dsonar.sources=. \
+                            -Dsonar.host.url=http://localhost:9000 \
+                            -Dsonar.login=$SONAR_TOKEN
+                        """
+                    }
                 }
             }
         }
