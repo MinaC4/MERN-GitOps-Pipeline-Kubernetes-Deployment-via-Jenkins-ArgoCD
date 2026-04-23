@@ -6,6 +6,7 @@ pipeline {
         SONAR_TOKEN = credentials('sonar-token')
         IMAGE_TAG = "${env.BUILD_NUMBER}"
         KUBECONFIG = "/var/lib/jenkins/.kube/config"
+        SONAR_SCANNER = "/opt/sonar-scanner/bin/sonar-scanner"
     }
 
     stages {
@@ -20,13 +21,13 @@ pipeline {
         stage('SonarQube Analysis') {
             steps {
                 withSonarQubeEnv('sonarqube') {
-                    sh '''
-                        sonar-scanner \
+                    sh """
+                        ${SONAR_SCANNER} \
                         -Dsonar.projectKey=eshtry-mny \
                         -Dsonar.sources=. \
                         -Dsonar.host.url=http://localhost:9000 \
                         -Dsonar.login=$SONAR_TOKEN
-                    '''
+                    """
                 }
             }
         }
@@ -42,12 +43,10 @@ pipeline {
         // ==================== BUILD ====================
         stage('Build Docker Images') {
             steps {
-                script {
-                    sh 'docker build -t minac4/eshtry-mny-user:${IMAGE_TAG} ./User'
-                    sh 'docker build -t minac4/eshtry-mny-product:${IMAGE_TAG} ./Product'
-                    sh 'docker build -t minac4/eshtry-mny-cart:${IMAGE_TAG} ./Cart'
-                    sh 'docker build -t minac4/eshtry-mny-frontend:${IMAGE_TAG} ./front-end'
-                }
+                sh 'docker build -t minac4/eshtry-mny-user:${IMAGE_TAG} ./User'
+                sh 'docker build -t minac4/eshtry-mny-product:${IMAGE_TAG} ./Product'
+                sh 'docker build -t minac4/eshtry-mny-cart:${IMAGE_TAG} ./Cart'
+                sh 'docker build -t minac4/eshtry-mny-frontend:${IMAGE_TAG} ./front-end'
             }
         }
 
@@ -75,13 +74,11 @@ pipeline {
         // ==================== PUSH ====================
         stage('Push Images to Docker Hub') {
             steps {
-                script {
-                    sh 'echo $DOCKERHUB_CREDENTIALS_PSW | docker login -u $DOCKERHUB_CREDENTIALS_USR --password-stdin'
-                    sh 'docker push minac4/eshtry-mny-user:${IMAGE_TAG}'
-                    sh 'docker push minac4/eshtry-mny-product:${IMAGE_TAG}'
-                    sh 'docker push minac4/eshtry-mny-cart:${IMAGE_TAG}'
-                    sh 'docker push minac4/eshtry-mny-frontend:${IMAGE_TAG}'
-                }
+                sh 'echo $DOCKERHUB_CREDENTIALS_PSW | docker login -u $DOCKERHUB_CREDENTIALS_USR --password-stdin'
+                sh 'docker push minac4/eshtry-mny-user:${IMAGE_TAG}'
+                sh 'docker push minac4/eshtry-mny-product:${IMAGE_TAG}'
+                sh 'docker push minac4/eshtry-mny-cart:${IMAGE_TAG}'
+                sh 'docker push minac4/eshtry-mny-frontend:${IMAGE_TAG}'
             }
         }
 
