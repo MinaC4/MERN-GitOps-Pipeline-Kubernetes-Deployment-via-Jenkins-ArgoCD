@@ -8,6 +8,8 @@ spec:
   - host: {{ .Values.ingress.host }}
     http:
       paths:
+
+      # Frontend handles ALL UI routes
       - path: /
         pathType: Prefix
         backend:
@@ -16,7 +18,8 @@ spec:
             port:
               number: 5173
 
-      - path: /users
+      # APIs only (optional improvement)
+      - path: /api/users
         pathType: Prefix
         backend:
           service:
@@ -24,7 +27,7 @@ spec:
             port:
               number: 9001
 
-      - path: /products
+      - path: /api/products
         pathType: Prefix
         backend:
           service:
@@ -32,7 +35,7 @@ spec:
             port:
               number: 9000
 
-      - path: /cart
+      - path: /api/cart
         pathType: Prefix
         backend:
           service:
