@@ -2,6 +2,12 @@
 
 An e-commerce demo built as **MERN microservices** (Node.js/Express + MongoDB + React) and deployed to **Kubernetes** using **Helm**, with a **DevSecOps CI/CD pipeline** in **Jenkins** and **GitOps continuous delivery** via **Argo CD**.
 
+
+## Architecture diagram
+
+![Eshtry-Mny architecture diagram](docs/architecture-diagram.png)
+
+
 ## What’s in this repo
 
 ### Application services
@@ -12,9 +18,6 @@ An e-commerce demo built as **MERN microservices** (Node.js/Express + MongoDB + 
 - **Cart service**: Node.js/Express in `Cart/` (API on `9003`)
 - **Database**: MongoDB (Atlas in this setup)
 
-## Architecture diagram
-
-![Eshtry-Mny architecture diagram](docs/architecture-diagram.png)
 
 ### DevSecOps & GitOps
 
